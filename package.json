@@ -1,0 +1,26 @@
+{
+  "name": "liri-node-app",
+  "version": "1.0.0",
+  "description": "\u001b[2~\u0016a command line node app that takes in parameters and gives you back data",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ejhalpin/liri-node-app.git"
+  },
+  "author": "Eugene Halpin",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "0.19.0",
+    "dotenv": "8.0.0",
+    "moment": "2.24.0",
+    "node-spotify-api": "1.1.1",
+    "inquirer": "6.4.1"
+  },
+  "bugs": {
+    "url": "https://github.com/ejhalpin/liri-node-app/issues"
+  },
+  "homepage": "https://github.com/ejhalpin/liri-node-app#readme"
+}
