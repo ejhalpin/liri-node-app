@@ -34,9 +34,9 @@ function logErrorToFile(err) {
 const welcomePrompt = {
   type: "input",
   message:
-    "\t\t===== Welcome to Liri! =====\n\n" +
-    "I'm a language interpretation and recognition interface\n\n" +
-    "To get started, how shall I refer to you (what's your call-sign, trucker)?\n\n",
+    "\t===== Welcome to Liri! =====\n\n" +
+    "==\tI'm a language interpretation and recognition interface\n\n" +
+    "==\tTo get started, how shall I refer to you (what's your call-sign, trucker)?\n\n",
   name: "login",
   validate: function(login) {
     var reservedChars = "~`!@#$%^&*()+={[}]|'\"\\:;<>,.?/";
@@ -50,15 +50,16 @@ const welcomePrompt = {
 const searchPrompt = {
   type: "input",
   message:
-    "what would you like to do? You can type: \n" +
-    "concert-this <artist/band name>\n" +
-    "spotify-this-song <song name>\n" +
-    "movie-this <movie title>\n" +
-    "do-what-it-says\n" +
+    "\t===== what would you like to do? =====\n" +
+    "==\tconcert-this <artist/band name>\n" +
+    "==\tspotify-this-song <song name>\n" +
+    "==\tmovie-this <movie title>\n" +
+    "==\tsurprise-me\n" +
     "-----------------------------------------\n" +
-    "you can perfom these admin tasks as well\n" +
-    "status\n" +
-    "quit\n\n",
+    "==\tyou can perfom these admin tasks as well\n" +
+    "==\tstatus\n" +
+    "==\thistory\n" +
+    "==\tquit\n\n",
   name: "search",
   validate: function(search) {
     //validation on the search string
@@ -113,9 +114,9 @@ function search(source, query) {
           var queryString = query.split(splitters[i]).join(joiners[i]);
         }
         axios
-          .get("https://rest.bandsintown.com/artists/" + queryString + "/events?app_id=" + keys.bands)
+          .get("https://rest.bandsintown.com/artists/" + queryString + "/events?app_id=" + keys.bands.id)
           .then(function(response) {
-            var result = [{ source, query, nres: response.data.length }];
+            var result = { source, query, nres: response.data.length, results: [] };
             //parse the results
             for (var i = 0; i < response.data.length; i++) {
               var object = {
@@ -123,21 +124,21 @@ function search(source, query) {
                 venueName: response.data[i].venue.name,
                 location: response.data[i].venue.city + ", " + response.data[i].venue.region + ", " + response.data[i].venue.country
               };
-              result.push(object);
+              result.results.push(object);
             }
             //print the result to the console
-            if (result.length === 1) {
+            if (result.results.length === 0) {
               //no results to display
               console.log("==\tYour search for " + query + " did not yeild any results.\n\n");
               resolve(result);
               return;
             }
             console.log("===== I found the following event(s) featuring " + query + " =====\n");
-            for (var j = 1; j < result.length; j++) {
+            for (var j = 1; j < result.results.length; j++) {
               console.log("==\n\t" + j + ":");
-              console.log("==\tVenue Name: " + result[j].venueName);
-              console.log("==\tLocation: " + result[j].location);
-              console.log("==\tEvent Date: " + result[j].date);
+              console.log("==\tVenue Name: " + result.results[j].venueName);
+              console.log("==\tLocation: " + result.results[j].location);
+              console.log("==\tEvent Date: " + result.results[j].date);
             }
             console.log("=================================================\n\n");
             resolve(result);
@@ -154,17 +155,72 @@ function search(source, query) {
             logErrorToFile(err);
             resolve(undefined);
           }
-          resolve(data);
+          var result = { source, query, nres: data.tracks.items.length, results: [] };
+
+          for (var i = 1; i < data.tracks.items.length; i++) {
+            var artist = data.tracks.items[i].artists[0].name;
+            var song = data.tracks.items[i].name;
+            var duration = moment(data.tracks.items[i].duration_ms).format("mm:ss");
+            var previewURL = data.tracks.items[i].preview_url;
+            var album = data.tracks.items[i].album.name;
+            console.log("=============result " + i + ":==============\n");
+            console.log("==\tSong: " + song);
+            console.log("==\tDuration: " + duration);
+            console.log("==\tBand/Artist: " + artist);
+            console.log("==\tAlbum: " + album);
+            console.log("==\tPreview Url: " + previewURL);
+            console.log("========================================\n");
+            var obj = {
+              artist,
+              song,
+              duration,
+              previewURL,
+              album
+            };
+            result.results.push(obj);
+          }
+          resolve(result);
         });
         break;
       case "movie":
         query = query.split(" ").join("+");
         axios
-          .get("http://www.omdbapi.com/?t=" + query + "&y=" + year + "&plot=short&apikey=" + keys.omdb)
+          .get("http://www.omdbapi.com/?t=" + query + "&apikey=" + keys.omdb.id)
           .then(function(response) {
-            resolve(response);
+            result = { source, query, type: "t" };
+            var title = response.data.Title;
+            var year = response.data.Year;
+            var imdbRating = response.data.Ratings[0].Value;
+            var rottenRating = response.data.Ratings[1].Value;
+            var originCountry = response.data.Country;
+            var language = response.data.Language;
+            var plot = response.data.Plot;
+            var cast = response.data.Actors;
+            console.log("========================================\n");
+            console.log("==\tTitle: " + title);
+            console.log("==\tYear: " + year);
+            console.log("==\tCountry: " + originCountry);
+            console.log("==\tLanguage: " + language);
+            console.log("==\tCast: " + cast);
+            console.log("==\tPlot: " + plot);
+            console.log("==\tIMDb Rating: " + imdbRating);
+            console.log("==\tRotten Tomatoes Rating: " + rottenRating);
+            console.log("========================================\n");
+            var object = {
+              title,
+              year,
+              originCountry,
+              language,
+              cast,
+              plot,
+              imdbRating,
+              rottenRating
+            };
+            result.result = object;
+            resolve(result);
           })
           .catch(function(err) {
+            logErrorToConsole(err);
             logErrorToFile(err);
             resolve(undefined);
           });
@@ -242,9 +298,9 @@ function getSearchCriteria() {
   );
 }
 
-function saveToFile(file, array) {
+function saveToFile(file, object) {
   return new Promise(resolve => {
-    fs.appendFile(file, JSON.stringify(array), function(err) {
+    fs.appendFile(file, JSON.stringify(object) + "\n", function(err) {
       if (err) {
         logErrorToFile(err);
         resolve("==\tSorry. I've run into some difficult saving your result: " + err.message);
@@ -292,6 +348,23 @@ function sleep(ms) {
     setTimeout(resolve, ms);
   });
 }
+
+function getRandom() {
+  return new Promise(resolve => {
+    fs.readFile(".lib/bin/random.rnd", "utf8", function(err, data) {
+      if (err) {
+        logErrorToFile(err);
+        console.log("==\tI'm having some difficulty surprising you. Check the error log.");
+        resolve(undefined);
+      }
+      var results = data.split("\n");
+      results.sort(function(a, b) {
+        return Math.random() - 0.5;
+      });
+      resolve(results[0]);
+    });
+  });
+}
 //a function that will check to see if keys are valid.
 //function returns a promise array in the fomat [message, keys, spotify, omdb, bandsintown]
 //the elements after message are boolean values -> true if key exists, false otherwise
@@ -331,6 +404,24 @@ function validateKeys() {
   });
 }
 
+function getHistory(user) {
+  return new Promise(resolve => {
+    var history = [];
+    fs.readFile("users/" + user + ".log", "utf8", function(err, data) {
+      if (err) {
+        logErrorToFile(err);
+        resolve(history);
+        return;
+      }
+      var results = data.split("\n");
+      for (var i = 1; i < results.length - 1; i++) {
+        history.push(JSON.parse(results[i]));
+      }
+      resolve(history);
+    });
+  });
+}
+
 async function liri() {
   console.log("********** LIRI is booting up **********");
   var keyMessageArray = await validateKeys();
@@ -351,6 +442,7 @@ async function liri() {
   var awake = true;
   while (awake) {
     var searchString = await getSearchCriteria();
+    await sleep(250);
     if (searchString === "status") {
       var status = await getStatus(user);
       console.log("===== " + user + " has been working with liri since " + status + " =====");
@@ -358,7 +450,30 @@ async function liri() {
       console.log("==\tSearches: " + searchCount);
       console.log("==\tSaved Searches: " + savedSearches);
       console.log("=================================================\n\n");
+      await sleep(500);
       continue;
+    }
+    if (searchString === "history") {
+      var history = await getHistory(user);
+      if (history.length === 0) {
+        console.log("==\tI couldn't find any search history.\n\n");
+        await sleep(300);
+        continue;
+      }
+      for (var i = 0; i < history.length; i++) {
+        await sleep(300);
+        console.log("==\tResult " + i);
+        console.log(JSON.stringify(history[i], null, 2));
+      }
+      console.log("=================================================\n\n");
+      continue;
+    }
+    if (searchString === "surprise-me") {
+      searchString = await getRandom();
+      await sleep(250);
+      if (searchString === undefined) {
+        continue;
+      }
     }
     var source = searchString.split("-")[0];
     var query = searchString
@@ -366,12 +481,18 @@ async function liri() {
       .slice(1)
       .join(" ");
     var result = await search(source, query);
+    if (result === undefined) {
+      console.log("==\tThere was a problen retreiving your results. Check the error log.");
+      continue;
+    }
     if (result.length === 1) {
       continue;
     }
+    await sleep(500);
     var confirm = await promptToSave();
     if (confirm) {
       console.log("==\tHang on a moment.\n");
+      await sleep(500);
       var message = await saveToFile("users/" + user + ".log", result);
       console.log(message + "\n\n");
       if (message.includes("Okay")) {
@@ -380,14 +501,10 @@ async function liri() {
     }
     searchCount++;
   }
+  await sleep(250);
 }
 liri();
-//if a profile is made...
-/*
- * prompt for a name
- * look for a user file associated with that name - OR - make one in the format ./users/name.log
- * if name.log exists - let the user know that you found their search history and print options for using liri
- */
+
 /*
 spotify query format:
 spotify.search({ type: <type>, query: <query>}).then(callback).catch(errFunction);
@@ -399,7 +516,7 @@ query is a space separated string - no pre-formatting is needed
 axios calls -- requires pre-formatting
 
 OMDB: 
-axios.get("http://www.omdbapi.com/?t=remember+the+titans&y=&plot=short&apikey=<api key>")
+axios.get("http://www.omdbapi.com/?t=<title>&apikey=<api key>")
 .then( Function(response) {...})
 .catch(function(err){...})
 
