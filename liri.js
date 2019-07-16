@@ -30,7 +30,7 @@ function logErrorToFile(err) {
     }
   });
 }
-
+//The prompt objects used with inquirer
 const welcomePrompt = {
   type: "input",
   message:
@@ -77,6 +77,7 @@ const savePrompt = {
   name: "confirm"
 };
 
+//loading the error log
 function getErrorLog() {
   return new Promise(resolve => {
     fs.open(errlog, "r+", function(err, fd) {
@@ -103,7 +104,38 @@ function getErrorLog() {
     });
   });
 }
-
+//update the user statistics in the user/name.log file
+function updateUserStats(user, sessionSearch, sessionSave) {
+  return new Promise(resolve => {
+    fs.readFile("users/" + user + ".log", "utf8", function(err, data) {
+      if (err) {
+        logErrorToFile(err);
+        resolve(false);
+        return;
+      }
+      var fileContents = data.split("\n");
+      var obj = JSON.parse(fileContents[0]);
+      obj.searches += sessionSearch;
+      obj.saves += sessionSave;
+      fileContents[0] = JSON.stringify(obj);
+      var fileString = "";
+      fileContents.forEach(line => {
+        if (line.length === 0) {
+          return;
+        }
+        fileString += line + "\n";
+      });
+      fs.writeFile("users/" + user + ".log", fileString, function(err) {
+        if (err) {
+          logErrorToFile(err);
+          resolve(false);
+        }
+        resolve(true);
+      });
+    });
+  });
+}
+//the search routines
 function search(source, query) {
   return new Promise(resolve => {
     switch (source) {
@@ -190,8 +222,7 @@ function search(source, query) {
             result = { source, query, type: "t" };
             var title = response.data.Title;
             var year = response.data.Year;
-            var imdbRating = response.data.Ratings[0].Value;
-            var rottenRating = response.data.Ratings[1].Value;
+            var Ratings = response.data.Ratings;
             var originCountry = response.data.Country;
             var language = response.data.Language;
             var plot = response.data.Plot;
@@ -203,8 +234,9 @@ function search(source, query) {
             console.log("==\tLanguage: " + language);
             console.log("==\tCast: " + cast);
             console.log("==\tPlot: " + plot);
-            console.log("==\tIMDb Rating: " + imdbRating);
-            console.log("==\tRotten Tomatoes Rating: " + rottenRating);
+            for (var i = 0; i < Ratings.length; i++) {
+              console.log("==\t" + Ratings[i].Source + ": " + Ratings[i].Value);
+            }
             console.log("========================================\n");
             var object = {
               title,
@@ -213,8 +245,7 @@ function search(source, query) {
               language,
               cast,
               plot,
-              imdbRating,
-              rottenRating
+              Ratings
             };
             result.result = object;
             resolve(result);
@@ -225,17 +256,13 @@ function search(source, query) {
             resolve(undefined);
           });
         break;
-      case "quit":
-        console.log("\n\n========== Goodbye. ==========");
-        process.exit(0);
-        break;
 
       default:
         resolve(null);
     }
   });
 }
-
+//the welcome function, which finds or creates the users/user.log file
 function welcome() {
   //show the welcome dialogue
   return new Promise(resolve =>
@@ -248,20 +275,21 @@ function welcome() {
             //handle the file not found exception
             if (err.errno === -4058) {
               //create the file using append
-              fs.appendFile(
-                "users/" + response.login + ".log",
-                response.login + " joined the liri community at " + moment().format("MM/DD/YYYY") + "\n",
-                function(err) {
-                  if (err) {
-                    logErrorToFile(err);
-                    logErrorToConsole(err);
-                    process.exit(42);
-                  } else {
-                    console.log("==\tNice to meet you, " + response.login + "!\n\n");
-                    resolve(response.login);
-                  }
+              var userData = {
+                joinDate: moment().format("MM/DD/YYYY"),
+                searches: 0,
+                saves: 0
+              };
+              fs.appendFile("users/" + response.login + ".log", JSON.stringify(userData) + "\n", function(err) {
+                if (err) {
+                  logErrorToFile(err);
+                  logErrorToConsole(err);
+                  process.exit(42);
+                } else {
+                  console.log("==\tNice to meet you, " + response.login + "!\n\n");
+                  resolve(response.login);
                 }
-              );
+              });
             }
             //Other errors (read/write permissions, etc.) will force LIRI to quit.
             else {
@@ -282,7 +310,7 @@ function welcome() {
       })
   );
 }
-
+//the function to show search prompt and return user input
 function getSearchCriteria() {
   return new Promise(resolve =>
     inquirer
@@ -297,19 +325,19 @@ function getSearchCriteria() {
       })
   );
 }
-
+//a routine to append an object to a file
 function saveToFile(file, object) {
   return new Promise(resolve => {
     fs.appendFile(file, JSON.stringify(object) + "\n", function(err) {
       if (err) {
         logErrorToFile(err);
-        resolve("==\tSorry. I've run into some difficult saving your result: " + err.message);
+        resolve("==\tSorry. I've run into some difficult saving your results: " + err.message);
       }
-      resolve("==\tOkay. I've saved your search result to your profile.");
+      resolve("==\tOkay. I've saved the results to your profile.");
     });
   });
 }
-
+//a routine to read the first line from a user.log file and return the stats therein
 function getStatus(user) {
   return new Promise(resolve => {
     fs.readFile("users/" + user + ".log", "utf8", function(err, data) {
@@ -318,16 +346,12 @@ function getStatus(user) {
         resolve("Sorry. I've run into some difficulty retreiving your status: " + err.message);
       }
       //get the sign-up date for the user
-      var status = data
-        .split("\n")
-        .shift()
-        .split(" ")
-        .pop();
-      resolve(status);
+      var status = data.split("\n").shift();
+      resolve(JSON.parse(status));
     });
   });
 }
-
+//a routine to promt the user to save search data and return user input
 function promptToSave() {
   return new Promise(resolve => {
     inquirer
@@ -342,13 +366,13 @@ function promptToSave() {
       });
   });
 }
-
+//a routine to pause for some number of milliseconds
 function sleep(ms) {
   return new Promise(resolve => {
     setTimeout(resolve, ms);
   });
 }
-
+//a function to read a random entry from the random.rnd file
 function getRandom() {
   return new Promise(resolve => {
     fs.readFile(".lib/bin/random.rnd", "utf8", function(err, data) {
@@ -403,7 +427,7 @@ function validateKeys() {
     resolve(array);
   });
 }
-
+//a routine to return the full saved search data stored in the user.log file
 function getHistory(user) {
   return new Promise(resolve => {
     var history = [];
@@ -421,7 +445,7 @@ function getHistory(user) {
     });
   });
 }
-
+//the literal runtime for the LIRI CLI
 async function liri() {
   console.log("********** LIRI is booting up **********");
   var keyMessageArray = await validateKeys();
@@ -443,12 +467,24 @@ async function liri() {
   while (awake) {
     var searchString = await getSearchCriteria();
     await sleep(250);
+    if (searchString === "quit") {
+      var success = await updateUserStats(user, searchCount, savedSearches);
+      if (success) {
+        console.log("==\tSaving session data...");
+        await sleep(300);
+        console.log("==\t\t...complete");
+      } else {
+        console.log("==\tUnable to save session data. Sorry.");
+      }
+      console.log("\n\n========== Goodbye. ==========");
+      process.exit(0);
+    }
     if (searchString === "status") {
       var status = await getStatus(user);
-      console.log("===== " + user + " has been working with liri since " + status + " =====");
+      console.log("===== " + user + " has been working with liri since " + status.joinDate + " =====");
       console.log("==\tSession Status:");
-      console.log("==\tSearches: " + searchCount);
-      console.log("==\tSaved Searches: " + savedSearches);
+      console.log("==\tSearches: " + (status.searches + searchCount));
+      console.log("==\tSaved Searches: " + (status.saves + savedSearches));
       console.log("=================================================\n\n");
       await sleep(500);
       continue;
@@ -501,25 +537,26 @@ async function liri() {
     }
     searchCount++;
   }
-  await sleep(250);
+  await sleep(550);
 }
+//execute liri
 liri();
 
-/*
+/*some additional info about the APIs:
+
 spotify query format:
 spotify.search({ type: <type>, query: <query>}).then(callback).catch(errFunction);
 where type can take values of : artist OR album OR track
 query is a space separated string - no pre-formatting is needed
-*/
-
-/*
+<-------------------------------------------------------------------------------------->
 axios calls -- requires pre-formatting
 
 OMDB: 
 axios.get("http://www.omdbapi.com/?t=<title>&apikey=<api key>")
 .then( Function(response) {...})
 .catch(function(err){...})
-
+where title is a '+' seprated string, ex: Batman Begins -> Batman+Begins
+<-------------------------------------------------------------------------------------->
 Bands In Town
 -artist info-
 axios.get("https://rest.bandsintown.com/artists/<artist>?app_id=<api key>")
