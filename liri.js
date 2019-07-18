@@ -23,7 +23,7 @@ function logErrorToConsole(err) {
 }
 //error handling for all other documentable errors
 function logErrorToFile(err) {
-  fs.appendFile(errlog, "error encountered at liri.js line 104 ==>" + err + "\n\n", function(err) {
+  fs.appendFile(errlog, "error encountered ==>" + err + "\n\n", function(err) {
     if (err) {
       logErrorToConsole(err);
       return process.exit(err.errno);
@@ -149,6 +149,8 @@ function search(source, query) {
           .get("https://rest.bandsintown.com/artists/" + queryString + "/events?app_id=" + keys.bands.id)
           .then(function(response) {
             var result = { source, query, nres: response.data.length, results: [] };
+            //there is a chance that the bandsintown api will return a new line character!
+
             //parse the results
             for (var i = 0; i < response.data.length; i++) {
               var object = {
@@ -166,7 +168,7 @@ function search(source, query) {
               return;
             }
             console.log("===== I found the following event(s) featuring " + query + " =====\n");
-            for (var j = 1; j < result.results.length; j++) {
+            for (var j = 0; j < result.results.length; j++) {
               console.log("==\n\t" + j + ":");
               console.log("==\tVenue Name: " + result.results[j].venueName);
               console.log("==\tLocation: " + result.results[j].location);
@@ -185,11 +187,12 @@ function search(source, query) {
         spotify.search({ type: "track", query: query }, function(err, data) {
           if (err) {
             logErrorToFile(err);
+            console.log(err);
             resolve(undefined);
           }
           var result = { source, query, nres: data.tracks.items.length, results: [] };
 
-          for (var i = 1; i < data.tracks.items.length; i++) {
+          for (var i = 0; i < data.tracks.items.length; i++) {
             var artist = data.tracks.items[i].artists[0].name;
             var song = data.tracks.items[i].name;
             var duration = moment(data.tracks.items[i].duration_ms).format("mm:ss");
@@ -219,7 +222,7 @@ function search(source, query) {
         axios
           .get("http://www.omdbapi.com/?t=" + query + "&apikey=" + keys.omdb.id)
           .then(function(response) {
-            result = { source, query, type: "t" };
+            result = { source, query, nres: 1, results: [] };
             var title = response.data.Title;
             var year = response.data.Year;
             var Ratings = response.data.Ratings;
@@ -247,7 +250,7 @@ function search(source, query) {
               plot,
               Ratings
             };
-            result.result = object;
+            result.results.push(object);
             resolve(result);
           })
           .catch(function(err) {
@@ -258,7 +261,8 @@ function search(source, query) {
         break;
 
       default:
-        resolve(null);
+        console.log("default statement reached in search switch");
+        resolve(undefined);
     }
   });
 }
@@ -316,7 +320,7 @@ function getSearchCriteria() {
     inquirer
       .prompt(searchPrompt)
       .then(function(response) {
-        resolve(response.search);
+        resolve(response.search.trim());
       })
       .catch(function(err) {
         logErrorToFile(err);
@@ -382,9 +386,14 @@ function getRandom() {
         resolve(undefined);
       }
       var results = data.split("\n");
+      results.forEach(result => {
+        result = result.trim();
+      });
+
       results.sort(function(a, b) {
         return Math.random() - 0.5;
       });
+
       resolve(results[0]);
     });
   });
@@ -445,6 +454,19 @@ function getHistory(user) {
     });
   });
 }
+
+function testSurprise() {
+  return new Promise(resolve => {
+    fs.readFile(".lib/bin/random.rnd", "utf8", function(err, data) {
+      if (err) {
+        resolve([]);
+        return;
+      }
+      var results = data.split("\n");
+      resolve(results);
+    });
+  });
+}
 //the literal runtime for the LIRI CLI
 async function liri() {
   console.log("********** LIRI is booting up **********");
@@ -458,7 +480,7 @@ async function liri() {
   await sleep(200);
   console.log("==\tBecoming insecure (reviwing error history)");
   await getErrorLog();
-  await sleep(150);
+  await sleep(250);
   console.log("********** Complete. LIRI is ready to rock! **********\n\n");
   var user = await welcome();
   var searchCount = 0;
@@ -506,8 +528,9 @@ async function liri() {
     }
     if (searchString === "surprise-me") {
       searchString = await getRandom();
+      searchString.trim();
       await sleep(250);
-      if (searchString === undefined) {
+      if (searchString === undefined || searchString.length === 0) {
         continue;
       }
     }
@@ -515,13 +538,14 @@ async function liri() {
     var query = searchString
       .split(" ")
       .slice(1)
-      .join(" ");
+      .join(" ")
+      .trim();
     var result = await search(source, query);
-    if (result === undefined) {
+    if (result === undefined || result === null) {
       console.log("==\tThere was a problen retreiving your results. Check the error log.");
       continue;
     }
-    if (result.length === 1) {
+    if (result.results.length === 0) {
       continue;
     }
     await sleep(500);
