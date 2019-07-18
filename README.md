@@ -12,7 +12,7 @@ _LIRI_ is a node command line tool built with **dotenv**, **fs**, **axios**, **i
 
 - A [video](./assets/videos/liri-files.mp4) where I go over the file system that LIRI lives in and interacts with
 
-- A [video](./assets/videos/liri-code.mp4) where I talk thorugh the code structure and what each of the functions does. I mention that the discussion is _hight level_ in the video. It is not. It's as nitty as it is gritty.
+- A [video](./assets/videos/liri-code.mp4) where I talk thorugh the code structure and what each of the functions does. I mention that the discussion is _high level_ in the video. It is not. It's as nitty as it is gritty.
 
 - A [video](./assets/videos/liri-node-app.mp4) where I give a live demo of the app in use and show all of the _LIRI_ features and functionality.
 
