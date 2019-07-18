@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <!-- google font -->
+    <link href="https://fonts.googleapis.com/css?family=Oxygen+Mono&display=swap" rel="stylesheet">
+    <title>LIRI CLI Overview</title>
+  </head>
+  <body>
+    <aside id="table_of_contents">
+      <span class="fixed">
+      <h3>Table of Contents</h3>
+      <ul>
+        <li><a href="#introduction">Introduction</a></li>
+        <li><a href="#previews">Preview Videos</a></li>
+        <li><a href="#organization">Organization</a></li>
+        <li><a href="#process">Process</a></li>
+          <ul>
+          <li><a href="#using-liri">Using LIRI</a></li>
+          <li><a href="#commands">What Each Command Does</a></li>
+          <li><a href="#requirements">Requirements</a></li>
+          <li><a href="#user-information">User Information</a></li>
+          <li><a href="#error-handling">Error Handling</a></li>
+        </ul>
+        <li><a href="#setup">Setup</a></li>
+        <ul>
+          <li><a href="#installing-packages">Installing Packages</a></li>
+          <li><a href="#adding-keys">Adding Keys to LIRI</a></li>
+          <li><a href="#keeping-secrets">Keeping Your Keys Secret</a></li>
+        </ul>
+
+      </ul>
+      </span>
+    </aside>
+    <section id="main">
+    <h1>liri-node-app</h1>
+
+    <h2 id="introduction">Introduction</h2>
+
+        <p><b>LIRI</b> is a language interpreting and recognition tool for users who want to search for songs, bands/artists events, or movies.</p>
+    <p>Powered by the Bands-In-Town, Spotify and OMDB APIs, <b>LIRI</b> will take in a user's search parameters and return relevant data from one or more API's.</p>
+    <p><b>LIRI</b> is a node command line tool built with <b>dotenv</b>, <b>fs</b>, <b>axios</b>, <b>inquirer</b>, and <b>moment</b> packages that utilizes the Javascript <b>async/await</b> functionality to provide a synchronous user esperience. Utilizing async/await ensuers that API data that is retrived is printed to the console before the next inquirer request for data reaches the user. It also provides for simple timeouts that used to prevent cascading data to the console that detracts from the user experience.</p>
+    <h2 id="previews">Preview Videos</h2>
+    <div class="video-container">
+      <video src="assets/videos/liri-files.mp4" controls>
+          Your browser does not support the video tag.
+        </video>
+        <p>A video discussion of the file system that LIRI lives in and interacts with</p>
+    
+        <video src="assets/videos/liri-code.mp4" controls>
+            Your browser does not support the video tag.
+          </video>
+          <p>A video where I talk thorugh the code structure and what each of the functions does. I mention that the discussion is _hight level_ in the video. It is not. It's as nitty as it is gritty</p>
+    
+          <video src="assets/videos/liri-node-app.mp4" controls>
+              Your browser does not support the video tag.
+            </video>
+            <p>A video where I give a live demo of the app in use and show all of the <b>LIRI</b> features and functionality</p>
+
+</div>
+    
+    <h2 id="organization"> Organization</h2>
+
+    <p><b>LIRI</b> is organized into a host of process functions, each of which returns a promise to the <b>LIRI</b> runtime which are then resolved into useable data. The process functions handle inquirer promts (which return a promise that resolves down to user inputs), API get requests through axios or the node spotify wrapper (which return a promise that resolves down to API data), and read/write/append file processes (which return a promise that resolves down to a string or boolean value).</p>
+    <p>The <b>LIRI</b> runtime is an asynchronous function that handles control flow, parses user inputs, and makes calls to process functions to execute user commands. Through the implementation of async/await, a simple loop is utilized to return the user to the main search and admin options promt. I prefer this technique over recursive calls and chained callback functions because it makes the code more readable and preserves the traditional top-down execution model of synchronous code.</p>
+    <p>You can see the code as I discuss it in deatil in this [video](./.lib/assets/videos/liri-code.mp4)</p>
+
+    <h2 id="process"> Process</h2>
+
+    <h3 id="using-liri">Using LIRI</h3>
+    
+    <p><em>before using <b>LIRI</b> you will need to populate a</em> <span class="code">.env</span> <em>file with API keys. Please see the <a href="#setup">setup_instructions</a> for more information.</em></p>
+    
+    <p>A user must provide a user name in response to the welcome prompt. User names are not case sensitive. They also may not contain certain characters. See the section on **User Information** below. Once a user has provided a name, <b>LIRI</b> will prompt the user with a list of possible commands. These commands are divided up into two sections:
+    <ul>
+      <li>Search Commands</li>
+        <ul>
+          <li><span class="code">concert-this &lt;band/artist&gt;</span></li>
+          <li><span class="code">spotify-this-song &lt;song title&gt;</span></li>
+          <li><span class="code">movie-this &lt;movie title&gt;</span></li>
+          <li><span class="code">surprise-me</span></li>
+        </ul>
+      <li>Administrative Commands</li>
+      <ul>
+        <li><span class="code">status</span></li>
+        <li><span class="code">history</span></li>
+        <li><span class="code">quit</span></li>
+      </ul>
+    </ul>
+    </p>
+
+    <p>Entering any of these commands will cause <b>LIRI</b> to perform the corresponsing action. The <b>Search</b> commands perform get requests to the connected APIs and return parsed data to the console. After returning and displaying the data, the user will be prompted with a confirmation <em>(y/n)</em> dialogue to save their search results. If the user chooses to save the result, the data object is stringified and appended to their user file. Otherwise, the results persist in the console but are lost in memory when <b>LIRI</b> promts the user for their next input. The <b>administrative</b> commands interact with the user file through the _fs_ package and will print data to the console.</p>
+
+    <h3 id="commands">What Each Command Does</h3>
+
+    <p><span class="code">concert-this &lt;band/artist&gt;</span> performs a GET request using <em>axios</em> to the <b>Bands In Town</b> API artist events endpoint. The result will contain upcoming events for the artist/band and the detailed response object will have
+    <ul>
+      <li>the artist name</li>
+      <li>the venue name</li>
+      <li>the venue location</li>
+      <li>the date of the event, formatted to <span class="code">MM/DD/YYYY</span></li>
+    </ul>
+    </p>
+
+    <p><span class="code">spotify-this-song &lt;song title&gt;</span> performs a search using the <em>node-spotify-api</em> package, a simple wrapper that facilitates easy-to-format requests to the <b>Spotify</b> API search endpoint. The result will contain an array of results, each of which will show:
+    <ul>
+    <li>the song name</li>
+    <li>the song duration</li>
+    <li>the artist/band</li>
+    <li>the album name</li>
+    <li>the spotify preview url (if any)</li>
+    </ul>
+    </p>
+
+    <p><span class="code">movie-this &lt;movie title&lt;</span> performs a search using <em>axios</em> to the <b>OMDb</b> API search endpoint. The result will contain a single object that will contain:
+    <ul>
+    <li>the movie title</li>
+    <li>the release year</li>
+    <li>the country of origin</li>
+    <li>the language</li>
+    <li>the cast</li>
+    <li>the plot (short format)</li>
+    <li>reviews* for the movie</li>
+    </ul>
+    <em>* the reviews are returned in an array and the array is looped over to display the review source and value. This prevents errors in data parsing because the API result object does not contain consistent review objet keys.</em>
+    </p>
+
+    <p><span class="code">surprise-me</span> is a syntax that deviates from the recommended <span class="code">do-what-it-says</span> command in the assignment. This command uses the <em>fs</em> package to read and parse data from <span class="code">random.rnd</span>. The file contains pre-formatted search commands that are read into an array. A single command is selected at random from the array and passed into the <b>LIRI</b> runtime as though a user had typed the command. Data is returned in the usual manner and the user is prompted to save their result.</p>
+    <p><span class="code">status</span> uses <em>fs</em> to access the <span class="code">_user_.log</span> file, parse the information contained within, and return a JSON object that contains user specific data. This data is then printed to the console. The current version of <b>LIRI</b> only collects information about the `date` that a user first logged in, the number of `searches` that a user has made, and the number of `saves` that the user has performed. This information is then combined with the current session data and displayed to the user.</p>
+    <p><span class="code">history</span> uses the <em>fs</em> package to access the <span class="code">_user_.log</span> file, parse the information within, and return an array of JSON objects containing previous search data. This data is then looped over and printed to the console for the user to view.</p>
+    <p><span class="code">quit</span> triggers <b>LIRI</b> to update the <span class="code">_user_.log</span> file to include current session data. The program then exits using <span class="code">process.exit(0)</span>.</p>
+
+    
+    <h3 id="requirements">Requirements</h3>
+
+    <p><b>LIRI</b> usage requires keys (and secrets) for each of the following APIs:
+    <ul>
+    <li>[Node-Spotify-API](https://www.npmjs.com/package/node-spotify-api)</li>
+    <li>[OMDB API](http://www.omdbapi.com)</li>
+    <li>[Bands In Town API](http://www.artists.bandsintown.com/bandsintown-api)</li>
+    </ul>
+    </p>
+    <p><em>These keys are stored in a</em> <span class="code">.env</span> <em>file which is not distributed with <b>LIRI</b>. For setup, see the [setup_instructions](./setup_instructions.md) file</em></p>
+
+    <h3 id="user-information">User Information</h3>
+
+    <p><b>LIRI</b> will prompt a user for their name after the welcome greeting. It is recommended that users choose a memorable and basic name, as this name becomes a filepath to their search history. Because of the nature of the <em>fs</em> package <b>user names are not case sensitive</b>. They should not include any of these characters: <span class="code">! @ # $ % ^ & * ? / | \ ' " ; : , &lt; &gt; ~</span></p>
+
+
+
+    <h3 id="error-handling">Error Handling</h3>
+
+    <p>
+      The current version of <b>LIRI</b> will not run if it is not able to log errors to <span class="code">.lib/bin/err.log</span>, a degree of awareness in the coding model that I like to call being <em>insecure</em>. If you are getting errors printed to the console, make sure you have read/write access to the <b>LIRI</b> root directory and any subdirectories. <b>LIRI</b> will exit with a numeric status code equivalent to <span class="code">err.errno</span> if the <span class="code">process.exit</span> function is called from within a file-system process. There are three distinct numeric exit codes that are used for system level exits:
+    <li><span class="code">0</span> &rarr; a user quits the program by typing 'quit'</li>
+    <li><span class="code">37</span> &rarr; <b>LIRI</b> is unable to read/write to the error log during bootup</li>
+    <li><span class="code">66</span> &rarr; <b>inquirer</b> is encountering errors which prevent user data from reaching the <b>LIRI</b> runtime</li>
+    </p>
+
+    <p>All other errors encountered in the application are recorded in a session block in the <span class="code">err.log</span> file. The session block is generated when <b>LIRI</b> boots up. <b>LIRI</b> will only exit on fatal errors that prevent error logging, user interaction, or data collection. In the current version, <b>LIRI</b> is capable of storing search results in the <span class="code">_user_.log</span> file. If the file is corrupted or otherwise inaccessible, <b>LIRI</b> will still continue to function and print search results to the console.</p>
+
+    <h2 id="setup">Setup Intructions</h2>
+    <h3 id="installing-packages">Installing Packages</h3>
+    <b>LIRI</b> is distributed with a <span class="code">package.JSON</span> file which tracks the package dependencis needed for <b>LIRI</b> to run. Before running <b>LIRI</b> for the first time, be sure to run <span class="code">npm install</span> from your node CLI.
+
+    <h3 id="adding-keys">Adding Keys to LIRI</h3>
+    
+    <p>Create a file named <span class="code">.env</span>, add the following to it, replacing the values with your API keys (no quotes) once you have them:</p>
+    
+    <span class="code">
+    <p># Spotify API keys<br/>
+    SPOTIFY_ID=your-Spotify-id<br/>
+    SPOTIFY_SECRET=your-Spotify-secret
+    </p>
+    <p>
+    # OMDB API keys<br/>
+    OMDB_KEY=your-OMDb-key<br/>
+    # Bands In Town keys
+    </p>
+    <p>
+    BANDSINTOWN_KEY=your-Bands-In-Town-key<br/>
+    </p>
+    </span>
+
+    <h3 id="keeping-secrets">Keeping Your Keys Secret</h3>
+
+    <p>Make a <span class="code">.gitignore</span> file and add your <span class="code">.env</span> file to it, if one does not exist already.</p>
+  </section>
+  </body>
+</html>

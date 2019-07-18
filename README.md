@@ -8,6 +8,14 @@ Powered by the Bands-In-Town, Spotify and OMDB APIs, _LIRI_ will take in a user'
 
 _LIRI_ is a node command line tool built with **dotenv**, **fs**, **axios**, **inquirer**, and **moment** packages that utilizes the Javascript **async/await** functionality to provide a synchronous user esperience. Utilizing async/await ensuers that API data that is retrived is printed to the console before the next inquirer request for data reaches the user. It also provides for simple timeouts that used to prevent cascading data to the console that detracts from the user experience.
 
+## Previews
+
+- A [video](./.lib/assets/videos/liri-files.mp4) where I go over the file system that LIRI lives in and interacts with
+
+- A [video](./.lib/assets/videos/liri-code.mp4) where I talk thorugh the code structure and what each of the functions does. I mention that the discussion is _hight level_ in the video. It is not. It's as nitty as it is gritty.
+
+- A [video](./.lib/assets/videos/liri-node-app.mp4) where I give a live demo of the app in use and show all of the _LIRI_ features and functionality.
+
 ## Organization
 
 _LIRI_ is organized into a host of process functions, each of which returns a promise to the _LIRI_ runtime which are then resolved into useable data. The process functions handle inquirer promts (which return a promise that resolves down to user inputs), API get requests through axios or the node spotify wrapper (which return a promise that resolves down to API data), and read/write/append file processes (which return a promise that resolves down to a string or boolean value).
@@ -25,7 +33,7 @@ _before using *LIRI* you will need to populate a .env file with API keys. Please
 A user must provide a user name in response to the welcome prompt. User names are not case sensitive. They also may not contain certain characters. See the section on **User Information** below. Once a user has provided a name, _LIRI_ will prompt the user with a list of possible commands. These commands are divided up into two sections:
 
 - Search Commands
-  - `concert this <band/artist>`
+  - `concert-this <band/artist>`
   - `spotify-this <song title>`
   - `movie-this <movie title>`
   - `surprise-me`
@@ -38,7 +46,7 @@ Entering any of these commands will cause _LIRI_ to perform the corresponsing ac
 
 ### What each command does
 
-`concert this <band/artist>` performs a GET request using _axios_ to the **Bands In Town** API search endpoint. The result will contain upcoming events for the artist/band and the detailed response object will have
+`concert-this <band/artist>` performs a GET request using _axios_ to the **Bands In Town** API search endpoint. The result will contain upcoming events for the artist/band and the detailed response object will have
 
 - the artist name
 - the venue name
@@ -72,14 +80,6 @@ Entering any of these commands will cause _LIRI_ to perform the corresponsing ac
 `history` uses the _fs_ package to access the `_user_.log` file, parse the information within, and return an array of JSON objects containing previous search data. This data is then looped over and printed to the console for the user to view.
 
 `quit` triggers _LIRI_ to update the `_user_.log` file to include current session data. The program then exits using `process.exit(0)`.
-
-## Previews
-
-- A [video](./.lib/assets/videos/liri-files.mp4) where I go over the file system that LIRI lives in and interacts with
-
-- A [video](./.lib/assets/videos/liri-code.mp4) where I talk thorugh the code structure and what each of the functions does. I mention that the discussion is _hight level_ in the video. It is not. It's as nitty as it is gritty.
-
-- A [video](./.lib/assets/videos/liri-node-app.mp4) where I give a live demo of the app in use and show all of the _LIRI_ features and functionality.
 
 ### Requirements
 
