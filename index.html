@@ -53,7 +53,7 @@
         <video src="assets/videos/liri-code.mp4" controls>
             Your browser does not support the video tag.
           </video>
-          <p>A video where I talk thorugh the code structure and what each of the functions does. I mention that the discussion is _hight level_ in the video. It is not. It's as nitty as it is gritty</p>
+          <p>A video where I talk thorugh the code structure and what each of the functions does. I mention that the discussion is <em>high level</em> in the video. It is not. It's as nitty as it is gritty</p>
     
           <video src="assets/videos/liri-node-app.mp4" controls>
               Your browser does not support the video tag.
@@ -66,7 +66,7 @@
 
     <p><b>LIRI</b> is organized into a host of process functions, each of which returns a promise to the <b>LIRI</b> runtime which are then resolved into useable data. The process functions handle inquirer promts (which return a promise that resolves down to user inputs), API get requests through axios or the node spotify wrapper (which return a promise that resolves down to API data), and read/write/append file processes (which return a promise that resolves down to a string or boolean value).</p>
     <p>The <b>LIRI</b> runtime is an asynchronous function that handles control flow, parses user inputs, and makes calls to process functions to execute user commands. Through the implementation of async/await, a simple loop is utilized to return the user to the main search and admin options promt. I prefer this technique over recursive calls and chained callback functions because it makes the code more readable and preserves the traditional top-down execution model of synchronous code.</p>
-    <p>You can see the code as I discuss it in deatil in this [video](./.lib/assets/videos/liri-code.mp4)</p>
+    
 
     <h2 id="process"> Process</h2>
 
